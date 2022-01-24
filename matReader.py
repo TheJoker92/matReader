@@ -1,5 +1,9 @@
 import numpy as np
 import matAPILib
+import math
+import sys
+
+print(np.finfo(float).eps)
 
 matApi = matAPILib.MatApi()
 
@@ -10,12 +14,10 @@ mat = matApi.readMatFile("V.mat")
 select = 4
 display = 1
 
-V = matApi.array_diff(mat["V"], matApi.min(mat["V"]))
+V = matApi.array_diff(mat["V"], np.full((matApi.getNumRows(mat["V"]), matApi.getNumCols(mat["V"])), matApi.min(mat["V"])))
 
 
 n = matApi.vectorLength(V)
-
-print("N -> " + str(n))
 
 #definition of local variables
 buffer = matApi.zeros(n,1)
@@ -27,7 +29,8 @@ else:
 
 #horizons = np.round(np.linspace(1,np.ceil(n/20),50));
 horizons = matApi.unique(np.round(matApi.logspace(0,2,50)/100*np.ceil(n/20)))
-#horizons=1:2:50;
+
+#horizons=range(1,51,2);
 Vorig = V
 #all this tempMat stuff is to avoid calling findpeaks which is horribly
 # slow for our purpose
@@ -37,22 +40,23 @@ tempMat[-1][2]=float("inf")
 
 # loop over scales
 for is_m in range(0, matApi.vectorLength(horizons)):
-    
     # sooth data, using fft-based convolution with a half sinusoid
-    horizon = horizons[is_m]
-    print(horizon)
-    if horizon > 1:
-        w=np.max(np.eps,np.sin(2*np.pi*(range(0,horizon)))/2/(horizon-1))
+    horizon = horizons[is_m].astype(int)
 
-        w=w/matApi.sum(w);   
+    if horizon > 1:
+        a = np.full((1, horizon), float(np.finfo(float).eps))
+        w=np.maximum(a,np.sin(2*math.pi*np.arange(0,horizon)/2/(horizon)))[0]
+
         print(w) 
-        #V=.np.convolve(V,w,mode='same');
+        w=w/matApi.sum(w);   
+        #V=np.convolve(V,w,mode='same');
         V = np.real(np.fft.ifft(V,n+horizon)*np.fft(w,n+horizon))
         V = V[1+np.floor(horizon/2):np.ceil(horizon/2)]
      
     #   find local maxima
     end = -1
-    tempMat[2:end] = V[1:end-1]
+    
+    tempMat[1:end-1] = V[0:end-2]
     # tempMat[:,2] = V
     # tempMat[1:end-1,3] = V[2:end]
 #     [useless,posMax] =max(tempMat,[],2)
@@ -119,4 +123,3 @@ for is_m in range(0, matApi.vectorLength(horizons)):
 #     title('Scale-space peak detection','FontSize',16);
 #     legend('data','computed criterion','selected peaks');
 # end
-

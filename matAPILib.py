@@ -9,12 +9,7 @@ class MatApi:
     :return: returns the number of rows
     """
     def getNumRows(self, array):
-        rows = 1
-
-        if not(array[0].dtype == "float64"):
-            rows = len(array[0])
-
-        return rows
+        return array.shape[0]
 
     """
     Given an array retrieve the number of cols
@@ -22,7 +17,10 @@ class MatApi:
     :return: returns the number of cols
     """
     def getNumCols(self, array):
-        return len(array)
+        cols = 1
+        if len(array.shape) > 1:
+            cols = array.shape[1]
+        return cols
 
     """
     Read the mat file
